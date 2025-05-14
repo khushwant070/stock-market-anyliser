@@ -1,0 +1,884 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Stock Market Analysis</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <style>
+        :root {
+            --primary-color: #2563eb;
+            --secondary-color: #0f172a;
+            --accent-color: #3b82f6;
+            --positive-color: #10b981;
+            --negative-color: #ef4444;
+            --bg-color: #f8fafc;
+            --card-bg: #ffffff;
+            --text-color: #1e293b;
+            --text-light: #64748b;
+            --border-color: #e2e8f0;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        body {
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            line-height: 1.6;
+        }
+
+        .container {
+            max-width: 1280px;
+            margin: 0 auto;
+            padding: 1rem;
+        }
+
+        header {
+            background-color: var(--secondary-color);
+            color: white;
+            padding: 1rem 0;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+
+        .header-content {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .logo {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            font-size: 1.5rem;
+            font-weight: bold;
+        }
+
+        .logo i {
+            color: var(--accent-color);
+        }
+
+        .search-container {
+            position: relative;
+            width: 100%;
+            max-width: 400px;
+        }
+
+        .search-input {
+            width: 100%;
+            padding: 0.75rem 1rem;
+            border-radius: 8px;
+            border: 1px solid var(--border-color);
+            background-color: rgba(255, 255, 255, 0.1);
+            color: white;
+            font-size: 1rem;
+        }
+
+        .search-input::placeholder {
+            color: rgba(255, 255, 255, 0.7);
+        }
+
+        .search-results {
+            position: absolute;
+            top: 100%;
+            left: 0;
+            right: 0;
+            background-color: white;
+            border-radius: 8px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+            z-index: 10;
+            max-height: 300px;
+            overflow-y: auto;
+            display: none;
+        }
+
+        .search-result-item {
+            padding: 0.75rem 1rem;
+            cursor: pointer;
+            transition: background-color 0.2s;
+        }
+
+        .search-result-item:hover {
+            background-color: var(--bg-color);
+        }
+
+        .search-result-symbol {
+            font-weight: bold;
+            color: var(--primary-color);
+        }
+
+        .search-result-name {
+            font-size: 0.85rem;
+            color: var(--text-light);
+        }
+
+        .main-content {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 1.5rem;
+            margin-top: 2rem;
+        }
+
+        @media (min-width: 1024px) {
+            .main-content {
+                grid-template-columns: 3fr 1fr;
+            }
+        }
+
+        .card {
+            background-color: var(--card-bg);
+            border-radius: 12px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+            padding: 1.5rem;
+            height: fit-content;
+        }
+
+        .chart-container {
+            min-height: 400px;
+            position: relative;
+        }
+
+        .loading-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: rgba(255, 255, 255, 0.8);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 5;
+        }
+
+        .spinner {
+            width: 50px;
+            height: 50px;
+            border: 5px solid var(--border-color);
+            border-top-color: var(--primary-color);
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            to {
+                transform: rotate(360deg);
+            }
+        }
+
+        .card-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1rem;
+            padding-bottom: 1rem;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .stock-info {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .stock-name {
+            font-size: 1.25rem;
+            font-weight: bold;
+        }
+
+        .stock-ticker {
+            font-size: 0.875rem;
+            color: var(--text-light);
+        }
+
+        .stock-price {
+            font-size: 1.5rem;
+            font-weight: bold;
+        }
+
+        .stock-change {
+            font-size: 0.875rem;
+            display: flex;
+            align-items: center;
+            gap: 0.25rem;
+        }
+
+        .positive {
+            color: var(--positive-color);
+        }
+
+        .negative {
+            color: var(--negative-color);
+        }
+
+        .time-filters {
+            display: flex;
+            gap: 0.5rem;
+            margin-bottom: 1rem;
+        }
+
+        .time-filter {
+            background: none;
+            border: 1px solid var(--border-color);
+            border-radius: 6px;
+            padding: 0.5rem 1rem;
+            cursor: pointer;
+            transition: all 0.2s;
+            font-size: 0.875rem;
+        }
+
+        .time-filter:hover, .time-filter.active {
+            background-color: var(--primary-color);
+            color: white;
+            border-color: var(--primary-color);
+        }
+
+        .stock-details {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 1rem;
+            margin-top: 1.5rem;
+        }
+
+        .detail-item {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .detail-label {
+            font-size: 0.75rem;
+            color: var(--text-light);
+        }
+
+        .detail-value {
+            font-size: 1rem;
+            font-weight: 500;
+        }
+
+        .prediction-header {
+            font-size: 1.25rem;
+            font-weight: bold;
+            margin-bottom: 1rem;
+            padding-bottom: 0.5rem;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .prediction-info {
+            margin-bottom: 1rem;
+            font-size: 0.875rem;
+            color: var(--text-light);
+            line-height: 1.5;
+        }
+
+        .prediction-chart {
+            min-height: 200px;
+            position: relative;
+        }
+
+        .market-news {
+            margin-top: 1.5rem;
+        }
+
+        .news-header {
+            font-size: 1.25rem;
+            font-weight: bold;
+            margin-bottom: 1rem;
+            padding-bottom: 0.5rem;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .news-list {
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+        }
+
+        .news-item {
+            display: flex;
+            gap: 1rem;
+            padding-bottom: 1rem;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .news-image {
+            width: 80px;
+            height: 80px;
+            border-radius: 8px;
+            object-fit: cover;
+        }
+
+        .news-content {
+            flex: 1;
+        }
+
+        .news-title {
+            font-weight: 600;
+            margin-bottom: 0.25rem;
+        }
+
+        .news-source {
+            font-size: 0.75rem;
+            color: var(--text-light);
+        }
+
+        .news-date {
+            font-size: 0.75rem;
+            color: var(--text-light);
+        }
+
+        .footer {
+            margin-top: 2rem;
+            text-align: center;
+            padding: 1rem 0;
+            color: var(--text-light);
+            font-size: 0.875rem;
+        }
+
+        .disclaimer {
+            font-size: 0.75rem;
+            color: var(--text-light);
+            margin-top: 0.5rem;
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <div class="container header-content">
+            <div class="logo">
+                <i class="fas fa-chart-line"></i>
+                <span>StockVision</span>
+            </div>
+            <div class="search-container">
+                <input type="text" id="stockSearch" class="search-input" placeholder="Search for a stock..." autocomplete="off">
+                <div class="search-results" id="searchResults"></div>
+            </div>
+        </div>
+    </header>
+
+    <div class="container">
+        <div class="main-content">
+            <div class="chart-section">
+                <div class="card">
+                    <div class="card-header">
+                        <div class="stock-info">
+                            <span class="stock-name" id="stockName">Reliance Industries Ltd</span>
+                            <span class="stock-ticker" id="stockTicker">RELIANCE.NS</span>
+                        </div>
+                        <div>
+                            <div class="stock-price" id="stockPrice">₹2,450.75</div>
+                            <div class="stock-change positive" id="stockChange">
+                                <i class="fas fa-caret-up"></i>
+                                <span>₹35.25 (1.46%)</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="time-filters">
+                        <button class="time-filter" data-days="1" data-interval="1m">1D</button>
+                        <button class="time-filter active" data-days="7" data-interval="5m">1W</button>
+                        <button class="time-filter" data-days="30" data-interval="30m">1M</button>
+                        <button class="time-filter" data-days="90" data-interval="1h">3M</button>
+                        <button class="time-filter" data-days="365" data-interval="1d">1Y</button>
+                    </div>
+
+                    <div class="chart-container">
+                        <div class="loading-overlay" id="chartLoading">
+                            <div class="spinner"></div>
+                        </div>
+                        <canvas id="priceChart"></canvas>
+                    </div>
+
+                    <div class="stock-details">
+                        <div class="detail-item">
+                            <span class="detail-label">Open</span>
+                            <span class="detail-value" id="openPrice">₹2,425.50</span>
+                        </div>
+                        <div class="detail-item">
+                            <span class="detail-label">Previous Close</span>
+                            <span class="detail-value" id="prevClose">₹2,415.50</span>
+                        </div>
+                        <div class="detail-item">
+                            <span class="detail-label">Day High</span>
+                            <span class="detail-value" id="dayHigh">₹2,460.75</span>
+                        </div>
+                        <div class="detail-item">
+                            <span class="detail-label">Day Low</span>
+                            <span class="detail-value" id="dayLow">₹2,420.25</span>
+                        </div>
+                        <div class="detail-item">
+                            <span class="detail-label">Volume</span>
+                            <span class="detail-value" id="volume">3.24M</span>
+                        </div>
+                        <div class="detail-item">
+                            <span class="detail-label">Last Updated</span>
+                            <span class="detail-value" id="lastUpdated">10 May 2025, 12:30 PM</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="card prediction-section">
+                    <h2 class="prediction-header">Price Prediction</h2>
+                    <p class="prediction-info">
+                        Based on our machine learning algorithm, here's the predicted price movement for the next 10 minutes.
+                        This prediction uses historical data patterns and technical indicators.
+                    </p>
+                    <div class="prediction-chart">
+                        <div class="loading-overlay" id="predictionLoading">
+                            <div class="spinner"></div>
+                        </div>
+                        <canvas id="predictionChart"></canvas>
+                    </div>
+                </div>
+            </div>
+
+            <div class="sidebar">
+                <div class="card market-news">
+                    <h2 class="news-header">Market News</h2>
+                    <div class="news-list" id="newsList">
+                        <div class="news-item">
+                            <img src="/api/placeholder/80/80" alt="News" class="news-image">
+                            <div class="news-content">
+                                <div class="news-title">Markets rally on positive earnings reports</div>
+                                <div class="news-source">Financial Times</div>
+                                <div class="news-date">2 hours ago</div>
+                            </div>
+                        </div>
+                        <div class="news-item">
+                            <img src="/api/placeholder/80/80" alt="News" class="news-image">
+                            <div class="news-content">
+                                <div class="news-title">Tech stocks surge as inflation cools</div>
+                                <div class="news-source">Bloomberg</div>
+                                <div class="news-date">5 hours ago</div>
+                            </div>
+                        </div>
+                        <div class="news-item">
+                            <img src="/api/placeholder/80/80" alt="News" class="news-image">
+                            <div class="news-content">
+                                <div class="news-title">Central bank holds interest rates steady</div>
+                                <div class="news-source">Reuters</div>
+                                <div class="news-date">Yesterday</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <footer class="footer">
+        <div class="container">
+            <p>© 2025 StockVision - College Project</p>
+            <p class="disclaimer">Disclaimer: Stock data is for educational purposes only. Not financial advice.</p>
+        </div>
+    </footer>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/chart.js/3.9.1/chart.min.js"></script>
+    <script>
+        // DOM Elements
+        const stockSearch = document.getElementById('stockSearch');
+        const searchResults = document.getElementById('searchResults');
+        const stockName = document.getElementById('stockName');
+        const stockTicker = document.getElementById('stockTicker');
+        const stockPrice = document.getElementById('stockPrice');
+        const stockChange = document.getElementById('stockChange');
+        const openPrice = document.getElementById('openPrice');
+        const prevClose = document.getElementById('prevClose');
+        const dayHigh = document.getElementById('dayHigh');
+        const dayLow = document.getElementById('dayLow');
+        const volume = document.getElementById('volume');
+        const lastUpdated = document.getElementById('lastUpdated');
+        const chartLoading = document.getElementById('chartLoading');
+        const predictionLoading = document.getElementById('predictionLoading');
+        const timeFilters = document.querySelectorAll('.time-filter');
+
+        // Chart instances
+        let priceChart = null;
+        let predictionChart = null;
+
+        // Default settings
+        let currentTicker = 'RELIANCE.NS';
+        let lookbackDays = 7;
+        let interval = '5m';
+
+        // Initialize the application
+        document.addEventListener('DOMContentLoaded', () => {
+            // Set up search functionality
+            setupSearch();
+            
+            // Set up time filter buttons
+            setupTimeFilters();
+            
+            // Load initial stock data
+            loadStockData(currentTicker, lookbackDays, interval);
+        });
+
+        // Set up search functionality
+        function setupSearch() {
+            stockSearch.addEventListener('input', debounce(searchStocks, 300));
+            
+            stockSearch.addEventListener('focus', () => {
+                if (stockSearch.value.length >= 2) {
+                    searchStocks();
+                }
+            });
+            
+            // Close search results when clicking outside
+            document.addEventListener('click', (e) => {
+                if (!stockSearch.contains(e.target) && !searchResults.contains(e.target)) {
+                    searchResults.style.display = 'none';
+                }
+            });
+        }
+
+        // Set up time filter buttons
+        function setupTimeFilters() {
+            timeFilters.forEach(filter => {
+                filter.addEventListener('click', () => {
+                    // Update active state
+                    timeFilters.forEach(f => f.classList.remove('active'));
+                    filter.classList.add('active');
+                    
+                    // Update variables
+                    lookbackDays = filter.dataset.days;
+                    interval = filter.dataset.interval;
+                    
+                    // Reload data
+                    loadStockData(currentTicker, lookbackDays, interval);
+                });
+            });
+        }
+
+        // Search for stocks
+        async function searchStocks() {
+            const query = stockSearch.value.trim();
+            
+            if (query.length < 2) {
+                searchResults.style.display = 'none';
+                return;
+            }
+            
+            try {
+                const response = await fetch(`/api/search-ticker?query=${encodeURIComponent(query)}`);
+                const data = await response.json();
+                
+                if (data.results && data.results.length > 0) {
+                    displaySearchResults(data.results);
+                } else {
+                    searchResults.innerHTML = '<div class="search-result-item">No results found</div>';
+                    searchResults.style.display = 'block';
+                }
+            } catch (error) {
+                console.error('Error searching for stocks:', error);
+            }
+        }
+
+        // Display search results
+        function displaySearchResults(results) {
+            searchResults.innerHTML = '';
+            
+            results.forEach(result => {
+                const resultItem = document.createElement('div');
+                resultItem.className = 'search-result-item';
+                resultItem.innerHTML = `
+                    <div class="search-result-symbol">${result.symbol}</div>
+                    <div class="search-result-name">${result.name}</div>
+                `;
+                
+                resultItem.addEventListener('click', () => {
+                    stockSearch.value = result.symbol;
+                    searchResults.style.display = 'none';
+                    currentTicker = result.symbol;
+                    loadStockData(currentTicker, lookbackDays, interval);
+                });
+                
+                searchResults.appendChild(resultItem);
+            });
+            
+            searchResults.style.display = 'block';
+        }
+
+        // Load stock data from API
+        async function loadStockData(ticker, lookback, interval) {
+            // Show loading indicators
+            chartLoading.style.display = 'flex';
+            predictionLoading.style.display = 'flex';
+            
+            try {
+                const response = await fetch(`/api/stock-data?ticker=${encodeURIComponent(ticker)}&lookback=${lookback}&interval=${interval}`);
+                const data = await response.json();
+                
+                if (data.error) {
+                    alert(`Error loading stock data: ${data.error}`);
+                    return;
+                }
+                
+                // Update UI with stock data
+                updateStockInfo(data);
+                
+                // Create/update charts
+                createPriceChart(data.data);
+                createPredictionChart(data.data, data.predictions);
+                
+            } catch (error) {
+                console.error('Error loading stock data:', error);
+                alert('Failed to load stock data. Please try again later.');
+            } finally {
+                // Hide loading indicators
+                chartLoading.style.display = 'none';
+                predictionLoading.style.display = 'none';
+            }
+        }
+
+        // Update stock information in the UI
+        function updateStockInfo(data) {
+            // Update stock name and ticker
+            stockTicker.textContent = data.ticker;
+            
+            // Try to get the stock name from the search results
+            const displayName = data.ticker.includes('.NS') ? 
+                data.ticker.replace('.NS', '') + ' (NSE)' : 
+                data.ticker.includes('.BO') ? 
+                    data.ticker.replace('.BO', '') + ' (BSE)' : 
+                    data.ticker;
+            
+            stockName.textContent = displayName;
+            
+            // Get the latest price
+            const latestData = data.data[data.data.length - 1];
+            const currentPrice = latestData.close;
+            
+            // Format the price with currency symbol
+            const isIndianStock = data.ticker.includes('.NS') || data.ticker.includes('.BO');
+            const currencySymbol = isIndianStock ? '₹' : '$';
+            
+            stockPrice.textContent = `${currencySymbol}${currentPrice.toFixed(2)}`;
+            
+            // Calculate price change
+            const previousCloseIndex = data.data.length >= 2 ? data.data.length - 2 : 0;
+            const previousClose = data.data[previousCloseIndex].close;
+            const priceChange = currentPrice - previousClose;
+            const priceChangePercent = (priceChange / previousClose) * 100;
+            
+            // Update price change display
+            stockChange.innerHTML = `
+                <i class="fas fa-caret-${priceChange >= 0 ? 'up' : 'down'}"></i>
+                <span>${currencySymbol}${Math.abs(priceChange).toFixed(2)} (${Math.abs(priceChangePercent).toFixed(2)}%)</span>
+            `;
+            stockChange.className = `stock-change ${priceChange >= 0 ? 'positive' : 'negative'}`;
+            
+            // Update stock details
+            openPrice.textContent = `${currencySymbol}${latestData.open.toFixed(2)}`;
+            prevClose.textContent = `${currencySymbol}${previousClose.toFixed(2)}`;
+            dayHigh.textContent = `${currencySymbol}${latestData.high.toFixed(2)}`;
+            dayLow.textContent = `${currencySymbol}${latestData.low.toFixed(2)}`;
+            
+            // Format volume
+            const formattedVolume = formatNumber(latestData.volume);
+            volume.textContent = formattedVolume;
+            
+            // Update last updated timestamp
+            lastUpdated.textContent = new Date(data.last_updated).toLocaleString();
+        }
+
+        // Create price chart
+        function createPriceChart(stockData) {
+            const ctx = document.getElementById('priceChart').getContext('2d');
+            
+            // Extract data for chart
+            const timestamps = stockData.map(item => new Date(item.timestamp));
+            const prices = stockData.map(item => item.close);
+            
+            // Destroy existing chart if it exists
+            if (priceChart) {
+                priceChart.destroy();
+            }
+            
+            // Create new chart
+            priceChart = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: timestamps,
+                    datasets: [{
+                        label: 'Stock Price',
+                        data: prices,
+                        backgroundColor: 'rgba(37, 99, 235, 0.1)',
+                        borderColor: 'rgba(37, 99, 235, 1)',
+                        borderWidth: 2,
+                        pointRadius: 0,
+                        pointHoverRadius: 5,
+                        pointHoverBackgroundColor: 'rgba(37, 99, 235, 1)',
+                        tension: 0.1,
+                        fill: true
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    interaction: {
+                        mode: 'index',
+                        intersect: false,
+                    },
+                    plugins: {
+                        tooltip: {
+                            callbacks: {
+                                label: function(context) {
+                                    return `Price: ${context.parsed.y.toFixed(2)}`;
+                                }
+                            }
+                        },
+                        legend: {
+                            display: false
+                        }
+                    },
+                    scales: {
+                        x: {
+                            type: 'time',
+                            time: {
+                                unit: lookbackDays <= 1 ? 'hour' : 
+                                      lookbackDays <= 7 ? 'day' : 'month',
+                                displayFormats: {
+                                    hour: 'HH:mm',
+                                    day: 'dd MMM',
+                                    month: 'MMM yyyy'
+                                }
+                            },
+                            grid: {
+                                display: false
+                            }
+                        },
+                        y: {
+                            grid: {
+                                color: 'rgba(0, 0, 0, 0.05)'
+                            }
+                        }
+                    }
+                }
+            });
+        }
+
+        // Create prediction chart
+        function createPredictionChart(stockData, predictions) {
+            const ctx = document.getElementById('predictionChart').getContext('2d');
+            
+            // Get the last few actual data points
+            const actualData = stockData.slice(-10);
+            
+            // Combine actual and prediction data
+            const timestamps = [
+                ...actualData.map(item => new Date(item.timestamp)),
+                ...predictions.map(item => new Date(item.timestamp))
+            ];
+            
+            const actualPrices = actualData.map(item => item.close);
+            const predictedPrices = predictions.map(item => item.price);
+            
+            // Fill arrays for display
+            const combinedActualPrices = [
+                ...actualPrices,
+                ...Array(predictions.length).fill(null)
+            ];
+            
+            const combinedPredictedPrices = [
+                ...Array(actualData.length).fill(null),
+                ...predictedPrices
+            ];
+            
+            // Destroy existing chart if it exists
+            if (predictionChart) {
+                predictionChart.destroy();
+            }
+            
+            // Create new chart
+            predictionChart = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: timestamps,
+                    datasets: [
+                        {
+                            label: 'Actual Price',
+                            data: combinedActualPrices,
+                            borderColor: 'rgba(37, 99, 235, 1)',
+                            backgroundColor: 'rgba(37, 99, 235, 0.1)',
+                            borderWidth: 2,
+                            pointRadius: 3,
+                            tension: 0.1,
+                            fill: false
+                        },
+                        {
+                            label: 'Predicted Price',
+                            data: combinedPredictedPrices,
+                            borderColor: 'rgba(239, 68, 68, 1)',
+                            borderWidth: 2,
+                            pointRadius: 3,
+                            borderDash: [5, 5],
+                            tension: 0.1,
+                            fill: false
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        tooltip: {
+                            callbacks: {
+                                label: function(context) {
+                                    const datasetLabel = context.dataset.label;
+                                    const value = context.parsed.y || 0;
+                                    return `${datasetLabel}: ${value.toFixed(2)}`;
+                                }
+                            }
+                        }
+                    },
+                    scales: {
+                        x: {
+                            type: 'time',
+                            time: {
+                                unit: 'minute',
+                                displayFormats: {
+                                    minute: 'HH:mm'
+                                }
+                            },
+                            grid: {
+                                display: false
+                            }
+                        },
+                        y: {
+                            grid: {
+                                color: 'rgba(0, 0, 0, 0.05)'
+                            }
+                        }
+                    }
+                }
+            });
+        }
+
+        // Utility function to format large numbers
+        function formatNumber(num) {
+            if (num >= 1000000000) {
+                return (num / 1000000000).toFixed(2) + 'B';
+            }
+            if (num >= 1000000) {
+                return (num / 1000000).toFixed(2) + 'M';
+            }
+            if (num >= 1000) {
+                return (num / 1000).toFixed(2) + 'K';
+            }
+            return num.toString();
+        }
+
+        // Debounce function to limit API calls
+        function debounce(func, wait) {
+            let timeout;
+            return function(...args) {
+                clearTimeout(timeout);
+                timeout = setTimeout(() => func.apply(this, args), wait);
+            };
+        }
+    </script>
+</body>
+</html>
